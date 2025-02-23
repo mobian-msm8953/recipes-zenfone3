@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Build Mobian rootfs for zenfone3 (${{ env.ui }})
+    name: Build Mobian rootfs for zenfone3
 
     steps:
       - name: Get current date
