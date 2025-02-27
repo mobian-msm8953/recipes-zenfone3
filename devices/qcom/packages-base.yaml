@@ -14,7 +14,6 @@ actions:
     description: Install device-specific base packages
     packages:
       - yq
-      - virt-manager
 {{- if ne $device "wip" }}
       - {{ $device }}-support
 {{- else }}
