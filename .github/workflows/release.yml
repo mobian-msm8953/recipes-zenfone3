@@ -1,0 +1,104 @@
+name: mobian rootfs-builder (zenfone3)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ui:
+        description: 'User interface'
+        default: 'phosh'
+        required: true
+        type: choice
+        options:
+          - phosh
+          - plasma-mobile
+  schedule:
+    - cron: "59 23 * * 3"
+
+env:
+  ui: ${{ inputs.ui || 'phosh' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: true
+
+    name: Build Mobian rootfs for zenfone3
+
+    steps:
+      - name: Get current date
+        run: echo "current_date=$(date +'%Y%m%d')" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: 'true'
+
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt -y install debos bmap-tools xz-utils android-sdk-libsparse-utils yq mkbootimg
+
+      - name: Build rootfs
+        run: |
+          sudo ./build.sh -z -t qcom-wip -e ${{ env.ui }}
+          sudo mv mobian-wip-${{ env.ui }}-${{ env.current_date }}.tar.xz mobian-zenfone3-${{ env.ui }}-${{ env.current_date }}.tar.xz
+          sudo chown runner:runner mobian-zenfone3-${{ env.ui }}-${{ env.current_date }}.tar.xz
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobian-zenfone3-${{ env.ui }}
+          path: mobian-zenfone3-${{ env.ui }}-${{ env.current_date }}.tar.xz
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  publish:
+    runs-on: ubuntu-24.04
+    name: Create GitHub release
+    needs: build
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free up some storage
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Nightly tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete nightly-${{ env.ui }} --yes | true
+          git push --delete origin refs/tags/nightly-${{ env.ui }} || true
+          gh release create nightly-${{ env.ui }}
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: out
+
+      - name: Create SHA256SUMS
+        run: |
+          cd out/mobian-zenfone3-${{ env.ui }}
+          sha256sum * >> SHA256SUMS
+
+      - name: Create release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/mobian-zenfone3-${{ env.ui }}/*
+          tag_name: nightly-${{ env.ui }}
+          draft: false
+          prerelease: true

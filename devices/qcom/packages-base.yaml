@@ -20,15 +20,14 @@ actions:
       - qcom-support-common
       - openssh-server
 
-  - action: overlay
-    description: Copy additional packages to image
-    source: packages
-    destination: /srv
-
-  - action: run
-    chroot: true
-    description: Install additional packages
-    command: dpkg -i /srv/*.deb
+  - action: apt
+    recommends: false
+    description: Install zenfone3 packages
+    packages:
+      - mobian-asus-zenfone3-tweaks
+      - firmware-asus-zenfone3
+      - linux-headers-6.12.0-qcom-msm8953
+      - linux-image-6.12.0-qcom-msm8953
 
   - action: overlay
     description: Add droid-juicer configuration to image

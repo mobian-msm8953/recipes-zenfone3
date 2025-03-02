@@ -3,7 +3,7 @@
 set -e
 
 export PATH="/sbin:/usr/sbin:${PATH}"
-DEBOS_CMD=debos
+DEBOS_CMD="debos --disable-fakemachine"
 if [ -z "${ARGS+x}" ]; then
     ARGS=""
 fi
