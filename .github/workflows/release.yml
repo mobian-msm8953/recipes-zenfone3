@@ -12,7 +12,7 @@ on:
           - phosh
           - plasma-mobile
   schedule:
-    - cron: "59 23 * * 3"
+    - cron: "00 01 * * 0"
 
 env:
   ui: ${{ inputs.ui || 'phosh' }}
